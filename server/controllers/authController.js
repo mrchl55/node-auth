@@ -4,17 +4,21 @@ const { generateToken, verifyToken, extractTokenFromHeader } = require('../utils
 const register = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
-      return res.status(400).json({ error: 'email already registered' });
+      return res.status(400).json({ error: 'user already exists' });
     }
 
     const user = await User.create({ email, password });
-    const token = generateToken({ id: user.id || user._id, email: user.email });
+    
+    const token = generateToken({ 
+      id: user.id || user._id,
+      email: user.email 
+    });
 
     res.status(201).json({
-      message: 'user registered successfully',
+      message: 'user created successfully',
       token,
       user: {
         id: user.id || user._id,
@@ -30,7 +34,7 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    
     const user = await User.findByEmail(email);
     if (!user) {
       return res.status(401).json({ error: 'invalid credentials' });
@@ -41,7 +45,10 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'invalid credentials' });
     }
 
-    const token = generateToken({ id: user.id || user._id, email: user.email });
+    const token = generateToken({ 
+      id: user.id || user._id,
+      email: user.email 
+    });
 
     res.json({
       message: 'login successful',
@@ -58,7 +65,7 @@ const login = async (req, res) => {
 };
 
 const logout = async (req, res) => {
-  res.json({ message: 'logout successful' });
+  res.json({ message: 'logged out successfully' });
 };
 
 const verify = async (req, res) => {
@@ -84,7 +91,7 @@ const verify = async (req, res) => {
       }
     });
   } catch (error) {
-    res.status(401).json({ error: 'invalid token' });
+    res.status(401).json({ valid: false, error: 'invalid token' });
   }
 };
 
