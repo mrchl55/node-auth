@@ -1,6 +1,6 @@
 import { AuthResponse, LoginData, RegisterData, User } from '../types/auth';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001/api';
 
 class AuthService {
   private getHeaders(includeAuth: boolean = false): HeadersInit {
@@ -27,7 +27,7 @@ class AuthService {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'login failed');
+      throw new Error(error.message || 'login failed');
     }
 
     const data = await response.json();
@@ -44,7 +44,7 @@ class AuthService {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'registration failed');
+      throw new Error(error.message || 'registration failed');
     }
 
     const data = await response.json();
@@ -82,7 +82,7 @@ class AuthService {
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.error || 'failed to get profile');
+      throw new Error(error.message || 'failed to get profile');
     }
 
     return await response.json();

@@ -1,33 +1,33 @@
-const User = require('../models/User');
-const { generateToken, verifyToken, extractTokenFromHeader } = require('../utils/jwt');
+const jwt = require('jsonwebtoken');
+const { UserService } = require('../models/User');
+
+const generateToken = (userId) => {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: '30m' });
+};
 
 const register = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const existingUser = await User.findByEmail(email);
+    const existingUser = await UserService.findByEmail(email);
     if (existingUser) {
-      return res.status(400).json({ error: 'user already exists' });
+      return res.status(400).json({ message: 'email already exists' });
     }
-
-    const user = await User.create({ email, password });
     
-    const token = generateToken({ 
-      id: user.id || user._id,
-      email: user.email 
-    });
-
+    const user = await UserService.create({ email, password });
+    const token = generateToken(user._id);
+    
     res.status(201).json({
       message: 'user created successfully',
       token,
       user: {
-        id: user.id || user._id,
+        id: user._id,
         email: user.email
       }
     });
   } catch (error) {
-    console.error('register error:', error);
-    res.status(500).json({ error: 'registration failed' });
+    console.error('registration error:', error);
+    res.status(500).json({ message: 'server error' });
   }
 };
 
@@ -35,79 +35,81 @@ const login = async (req, res) => {
   try {
     const { email, password } = req.body;
     
-    const user = await User.findByEmail(email);
+    const user = await UserService.findByEmail(email);
     if (!user) {
-      return res.status(401).json({ error: 'invalid credentials' });
+      return res.status(401).json({ message: 'invalid credentials' });
     }
-
+    
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
-      return res.status(401).json({ error: 'invalid credentials' });
+      return res.status(401).json({ message: 'invalid credentials' });
     }
-
-    const token = generateToken({ 
-      id: user.id || user._id,
-      email: user.email 
-    });
-
+    
+    const token = generateToken(user._id);
+    
     res.json({
       message: 'login successful',
       token,
       user: {
-        id: user.id || user._id,
+        id: user._id,
         email: user.email
       }
     });
   } catch (error) {
     console.error('login error:', error);
-    res.status(500).json({ error: 'login failed' });
-  }
-};
-
-const logout = async (req, res) => {
-  res.json({ message: 'logged out successfully' });
-};
-
-const verify = async (req, res) => {
-  try {
-    const token = extractTokenFromHeader(req.headers.authorization);
-    
-    if (!token) {
-      return res.status(401).json({ error: 'no token provided' });
-    }
-
-    const decoded = verifyToken(token);
-    const user = await User.findById(decoded.id);
-    
-    if (!user) {
-      return res.status(401).json({ error: 'user not found' });
-    }
-
-    res.json({
-      valid: true,
-      user: {
-        id: user.id || user._id,
-        email: user.email
-      }
-    });
-  } catch (error) {
-    res.status(401).json({ valid: false, error: 'invalid token' });
+    res.status(500).json({ message: 'server error' });
   }
 };
 
 const profile = async (req, res) => {
-  res.json({
-    user: {
-      id: req.user.id || req.user._id,
-      email: req.user.email
+  try {
+    const user = await UserService.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'user not found' });
     }
-  });
+    
+    res.json({
+      user: {
+        id: user._id,
+        email: user.email,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error('profile error:', error);
+    res.status(500).json({ message: 'server error' });
+  }
+};
+
+const verify = async (req, res) => {
+  try {
+    const user = await UserService.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ message: 'user not found' });
+    }
+    
+    res.json({
+      valid: true,
+      user: {
+        id: user._id,
+        email: user.email
+      }
+    });
+  } catch (error) {
+    console.error('verify error:', error);
+    res.status(500).json({ message: 'server error' });
+  }
+};
+
+const logout = (req, res) => {
+  res.json({ message: 'logout successful' });
 };
 
 module.exports = {
   register,
   login,
-  logout,
+  profile,
   verify,
-  profile
+  logout
 }; 

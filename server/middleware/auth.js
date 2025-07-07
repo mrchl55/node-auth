@@ -1,25 +1,26 @@
-const { verifyToken, extractTokenFromHeader } = require('../utils/jwt');
-const User = require('../models/User');
+const jwt = require('jsonwebtoken');
+const { UserService } = require('../models/User');
 
 const authenticateToken = async (req, res, next) => {
   try {
-    const token = extractTokenFromHeader(req.headers.authorization);
+    const authHeader = req.headers.authorization;
+    const token = authHeader && authHeader.split(' ')[1];
     
     if (!token) {
-      return res.status(401).json({ error: 'access token required' });
+      return res.status(401).json({ message: 'access token required' });
     }
 
-    const decoded = verifyToken(token);
-    const user = await User.findById(decoded.id);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const user = await UserService.findById(decoded.userId);
     
     if (!user) {
-      return res.status(401).json({ error: 'user not found' });
+      return res.status(401).json({ message: 'user not found' });
     }
 
-    req.user = user;
+    req.user = { userId: decoded.userId, email: user.email };
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'invalid token' });
+    return res.status(401).json({ message: 'invalid token' });
   }
 };
 
