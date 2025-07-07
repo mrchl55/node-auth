@@ -28,7 +28,7 @@ node-auth/
 │   ├── middleware/  # custom middleware
 │   ├── models/      # database models
 │   ├── routes/      # api routes
-│   └── utils/       # helper functions
+│   └── schemas/     # validation schemas
 ├── client/          # frontend react app
 │   ├── src/
 │   │   ├── components/
@@ -38,50 +38,131 @@ node-auth/
 │   └── public/
 ```
 
-## setup
+## local setup
 
-### what you need
+### prerequisites
 
 - node.js (v16+)
-- mysql (v8.0+) 
-- mongodb (v4.4+)
+- npm or yarn
+- mongodb (v4.4+) or mysql (v8.0+)
 
-### getting started
+### step-by-step setup
 
-1. **clone and install**
+1. **clone the repo**
    ```bash
    git clone <repo-url>
    cd node-auth
+   ```
+
+2. **install dependencies**
+   ```bash
+   npm install
    npm run install:all
    ```
 
-2. **setup databases**
+3. **setup database**
    
-   **mysql:**
+   **option a: mongodb (recommended)**
+   ```bash
+   # install mongodb (macos)
+   brew install mongodb-community
+   
+   # start mongodb service
+   brew services start mongodb-community
+   
+   # mongodb will create the database automatically
+   ```
+
+   **option b: mysql**
    ```sql
+   # create database and user
    CREATE DATABASE node_auth;
    CREATE USER 'auth_user'@'localhost' IDENTIFIED BY 'your_password';
    GRANT ALL PRIVILEGES ON node_auth.* TO 'auth_user'@'localhost';
+   FLUSH PRIVILEGES;
    ```
 
-   **mongodb:**
-   - just make sure it's running on port 27017
-   - database gets created automatically
-
-3. **environment config**
+4. **configure environment variables**
+   
+   **server configuration:**
    ```bash
-   cp server/.env.example server/.env
+   # copy example file
+   cp server/env.example server/.env
+   
+   # edit server/.env with your settings
    ```
-   then edit the `.env` file with your database stuff and jwt secret
-
-4. **run it**
+   
+   **client configuration:**
    ```bash
+   # copy example file
+   cp client/env.example client/.env
+   
+   # edit client/.env if needed (defaults should work)
+   ```
+
+5. **start the application**
+   ```bash
+   # start both server and client
    npm run dev
    ```
+   
+   or start them separately:
+   ```bash
+   # terminal 1 - start server
+   npm run server:dev
+   
+   # terminal 2 - start client
+   npm run client:dev
+   ```
 
-   then go to:
+6. **access the application**
    - frontend: http://localhost:3000
-   - backend api: http://localhost:5000
+   - backend api: http://localhost:3001
+
+### environment variables
+
+**server/.env**
+```env
+# Server Configuration
+PORT=3001
+NODE_ENV=development
+
+# Database Configuration
+DB_TYPE=mongodb
+MONGODB_URI=mongodb://localhost:27017/node-auth
+
+# JWT Configuration
+JWT_SECRET=your-super-secret-jwt-key-at-least-32-characters-long
+
+# Rate Limiting
+RATE_LIMIT_WINDOW=15
+RATE_LIMIT_MAX=100
+
+# CORS Configuration
+CLIENT_URL=http://localhost:3000
+```
+
+**client/.env**
+```env
+# API URL for backend server
+REACT_APP_API_URL=http://localhost:3001/api
+```
+
+### troubleshooting
+
+**port conflicts:**
+- if port 3000 is busy, react will ask to use another port
+- if port 3001 is busy, change PORT in server/.env
+
+**database connection issues:**
+- make sure mongodb is running: `brew services list | grep mongodb`
+- check mongodb logs: `brew services info mongodb-community`
+- for mysql, verify credentials and database exists
+
+**authentication issues:**
+- make sure JWT_SECRET is at least 32 characters
+- check that both server and client are using same ports
+- verify CORS settings in server/.env
 
 ## api endpoints
 
@@ -101,6 +182,39 @@ node-auth/
 - security headers
 - environment variables protected
 
+## development
+
+### available scripts
+
+```bash
+# development
+npm run dev              # start both server and client
+npm run server:dev       # start server only
+npm run client:dev       # start client only
+
+# testing
+npm test                 # run all tests
+npm run test:server      # run server tests
+npm run test:client      # run client tests
+
+# code quality
+npm run lint             # lint all code
+npm run lint:fix         # fix linting issues
+npm run typecheck        # check typescript types
+npm run validate         # run all checks (lint + typecheck + test)
+
+# production
+npm run build            # build for production
+npm start                # start production server
+```
+
+### database switching
+
+to switch between mongodb and mysql:
+1. change `DB_TYPE` in server/.env
+2. configure the appropriate database connection variables
+3. restart the server
+
 ## how it's built
 
 follows solid principles and clean architecture:
@@ -118,16 +232,6 @@ follows solid principles and clean architecture:
 3. **frontend**: react for component structure
 4. **security**: prioritized security over performance
 5. **organization**: modular structure for easier maintenance
-
-## testing
-
-```bash
-# backend tests
-cd server && npm test
-
-# frontend tests
-cd client && npm test
-```
 
 ## deployment
 

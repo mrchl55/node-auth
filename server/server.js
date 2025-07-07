@@ -33,6 +33,7 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'server is running' });
 });
 
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ error: 'something went wrong' });
@@ -54,4 +55,8 @@ const startServer = async () => {
   }
 };
 
-startServer(); 
+if (require.main === module) {
+  startServer();
+}
+
+module.exports = app; 
