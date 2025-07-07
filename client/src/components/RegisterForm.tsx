@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../utils/AuthContext';
+import { validateRegisterForm, RegisterFormData } from '../schemas/authSchemas';
 
 interface RegisterFormProps {
   onSwitchToLogin: () => void;
@@ -15,30 +16,9 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
   const { register, isLoading, error, clearError } = useAuth();
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
-    
-    if (!formData.email) {
-      newErrors.email = 'email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'email is invalid';
-    }
-    
-    if (!formData.password) {
-      newErrors.password = 'password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'password must be at least 6 characters';
-    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'password must contain at least one lowercase letter, one uppercase letter, and one number';
-    }
-    
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = 'please confirm your password';
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'passwords do not match';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const result = validateRegisterForm(formData);
+    setErrors(result.errors);
+    return result.success;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

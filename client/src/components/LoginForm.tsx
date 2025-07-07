@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../utils/AuthContext';
+import { validateLoginForm, LoginFormData } from '../schemas/authSchemas';
 
 interface LoginFormProps {
   onSwitchToRegister: () => void;
@@ -14,22 +15,9 @@ const LoginForm: React.FC<LoginFormProps> = ({ onSwitchToRegister }) => {
   const { login, isLoading, error, clearError } = useAuth();
 
   const validateForm = () => {
-    const newErrors: { [key: string]: string } = {};
-    
-    if (!formData.email) {
-      newErrors.email = 'email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'email is invalid';
-    }
-    
-    if (!formData.password) {
-      newErrors.password = 'password is required';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'password must be at least 6 characters';
-    }
-    
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const result = validateLoginForm(formData);
+    setErrors(result.errors);
+    return result.success;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

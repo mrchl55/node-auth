@@ -50,8 +50,12 @@ const connectDatabase = async () => {
     return await connectMySQL();
   } else if (dbType === 'mongodb') {
     return await connectMongoDB();
+  } else if (dbType === 'file') {
+    console.log('using file-based storage');
+    return Promise.resolve();
   } else {
-    throw new Error('invalid database type');
+    console.log('no database specified, using file-based storage');
+    return Promise.resolve();
   }
 };
 

@@ -88,9 +88,99 @@ class MySQLUser {
   }
 }
 
+const fs = require('fs').promises;
+const path = require('path');
+
+const USERS_FILE = path.join(__dirname, '../data/users.json');
+
+class FileUser {
+  constructor(data) {
+    this.email = data.email;
+    this.password = data.password;
+    this.id = data.id || Date.now().toString();
+    this.createdAt = data.createdAt || new Date().toISOString();
+  }
+
+  static async ensureDataDir() {
+    const dataDir = path.dirname(USERS_FILE);
+    try {
+      await fs.mkdir(dataDir, { recursive: true });
+    } catch (error) {
+      // Directory already exists
+    }
+  }
+
+  static async loadUsers() {
+    try {
+      await this.ensureDataDir();
+      const data = await fs.readFile(USERS_FILE, 'utf8');
+      return JSON.parse(data);
+    } catch (error) {
+      return [];
+    }
+  }
+
+  static async saveUsers(users) {
+    await this.ensureDataDir();
+    await fs.writeFile(USERS_FILE, JSON.stringify(users, null, 2));
+  }
+
+  static async create(userData) {
+    const users = await this.loadUsers();
+    
+    const existingUser = users.find(u => u.email === userData.email);
+    if (existingUser) {
+      throw new Error('email already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(userData.password, 12);
+    const newUser = new FileUser({
+      email: userData.email,
+      password: hashedPassword,
+      id: Date.now().toString()
+    });
+
+    users.push(newUser);
+    await this.saveUsers(users);
+    
+    return newUser;
+  }
+
+  static async findByEmail(email) {
+    const users = await this.loadUsers();
+    const userData = users.find(u => u.email === email);
+    
+    if (!userData) return null;
+    
+    return new FileUser(userData);
+  }
+
+  static async findById(id) {
+    const users = await this.loadUsers();
+    const userData = users.find(u => u.id === id);
+    
+    if (!userData) return null;
+    
+    return new FileUser(userData);
+  }
+
+  async comparePassword(candidatePassword) {
+    return await bcrypt.compare(candidatePassword, this.password);
+  }
+}
+
 const getUser = () => {
   const dbType = process.env.DB_TYPE || 'mysql';
-  return dbType === 'mongodb' ? MongoUser : MySQLUser;
+  
+  if (dbType === 'mongodb') {
+    return MongoUser;
+  } else if (dbType === 'mysql') {
+    return MySQLUser;
+  } else if (dbType === 'file') {
+    return FileUser;
+  }
+  
+  return FileUser;
 };
 
 module.exports = getUser(); 
